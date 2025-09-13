@@ -1,0 +1,51 @@
+
+networks:
+  interactiveCart-network:
+    driver: bridge
+
+services:
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: interactiveCart-bot
+    command: python -m src.main
+    expose:
+      - "8085"
+    env_file:
+      - backend/.env
+    restart: unless-stopped
+    networks:
+      - interactiveCart-network
+
+  frontend:
+    build:
+      context: ./map-exhibition
+      dockerfile: Dockerfile
+    container_name: interactiveCart-frontend
+    command: npm run dev
+    env_file:
+      - map-exhibition/.env
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - interactiveCart-network
+
+  cloudpub:
+    image: cloudpub/cloudpub:latest
+    container_name: interactiveCart-cloudpub_tunnel
+    volumes:
+      - interactiveCart_cloudpub-config:/home/cloudpub
+    restart: unless-stopped
+    networks:
+      - interactiveCart-network
+    env_file:
+      - backend/.env
+    environment:
+      - HTTP=interactiveCart-bot:8085,interactiveCart-frontend:3000
+    command: run
+
+
+volumes:
+  interactiveCart_cloudpub-config:
